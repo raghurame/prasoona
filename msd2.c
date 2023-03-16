@@ -95,7 +95,7 @@ float **initializeDisplacementSquare (float **displacementSquare, int totalTimes
 
 	for (int i = 0; i < totalTimesteps; ++i)
 	{
-		displacementSquare[i] = (float *) malloc (nAtoms * sizeof (float));
+		displacementSquare[i] = (float *) calloc (nAtoms, sizeof (float));
 	}
 
 	return displacementSquare;
@@ -104,7 +104,11 @@ float **initializeDisplacementSquare (float **displacementSquare, int totalTimes
 
 float **computeDisplacementSquare (float **displacementSquare, TRAJ_DATA **atoms, int totalTimesteps, int nAtoms)
 {
-	int currentProgress = 0;
+	int currentProgress = 0, **denominator;
+	denominator = (int **) malloc (totalTimesteps * sizeof (int *));
+
+	for (int i = 0; i < totalTimesteps; ++i) {
+		denominator[i] = (int *) calloc (nAtoms, sizeof (int)); }
 
 	#pragma omp parallel for
 	for (int i = 0; i < totalTimesteps; ++i)
@@ -120,12 +124,19 @@ float **computeDisplacementSquare (float **displacementSquare, TRAJ_DATA **atoms
 		{
 			for (int k = 0; k < nAtoms; ++k)
 			{
-				displacementSquare[i][k] = 
+				displacementSquare[i][k] += 
 					((atoms[j + i][k].x - atoms[j][k].x) * (atoms[j + i][k].x - atoms[j][k].x)) + 
 					((atoms[j + i][k].y - atoms[j][k].y) * (atoms[j + i][k].y - atoms[j][k].y)) + 
 					((atoms[j + i][k].z - atoms[j][k].z) * (atoms[j + i][k].z - atoms[j][k].z));
+				denominator[i][k]++;
 			}
 		}
+	}
+
+	for (int i = 0; i < totalTimesteps; ++i)
+	{
+		for (int j = 0; j < nAtoms; ++j) {
+			displacementSquare[i][j] /= denominator[i][j]; }
 	}
 
 	return displacementSquare;
@@ -155,11 +166,33 @@ int main(int argc, char const *argv[])
 	displacementSquare = initializeDisplacementSquare (displacementSquare, totalTimesteps, nAtoms);
 	displacementSquare = computeDisplacementSquare (displacementSquare, atoms, totalTimesteps, nAtoms);
 
-	// Testing the above code block
+	float *meanSquareDisplacementPolymer, *meanSquareDisplacementCounterions;
+	meanSquareDisplacementPolymer = (float *) calloc (totalTimesteps, sizeof (float));
+	meanSquareDisplacementCounterions = (float *) calloc (totalTimesteps, sizeof (float));
+
 	for (int i = 0; i < totalTimesteps; ++i)
 	{
-		printf("%f\n", displacementSquare[i][0]);
-		usleep (100000);
+		for (int j = 0; j < 92; ++j)
+		{
+			meanSquareDisplacementPolymer[i] += displacementSquare[i][j];
+		}
+
+		meanSquareDisplacementPolymer[i] /= 92;
+	}
+
+	for (int i = 0; i < totalTimesteps; ++i)
+	{
+		for (int j = 93; j < 147; ++j)
+		{
+			meanSquareDisplacementCounterions[i] += displacementSquare[i][j];
+		}
+
+		meanSquareDisplacementCounterions[i] /= 92;
+	}
+
+	for (int i = 0; i < totalTimesteps; ++i)
+	{
+		printf("%d %f %f\n", i + 1, meanSquareDisplacementPolymer[i], meanSquareDisplacementCounterions[i]);
 	}
 
 	fclose (inputDumpFile);
