@@ -187,7 +187,7 @@ int main(int argc, char const *argv[])
 			meanSquareDisplacementCounterions[i] += displacementSquare[i][j];
 		}
 
-		meanSquareDisplacementCounterions[i] /= 92;
+		meanSquareDisplacementCounterions[i] /= 55;
 	}
 
 	for (int i = 0; i < totalTimesteps; ++i)
