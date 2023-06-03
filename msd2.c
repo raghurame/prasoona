@@ -6,6 +6,11 @@
 #include <unistd.h>
 #include <omp.h>
 
+#define NPOLYMERBEADS 1
+#define NCOUNTERIONS 0
+#define OUTPUTFILENAME "msd.output"
+#define INVERSE_TIMESTEP_LIMIT 1
+
 typedef struct trajdata
 {
 	float x, y, z;
@@ -111,12 +116,12 @@ float **computeDisplacementSquare (float **displacementSquare, TRAJ_DATA **atoms
 		denominator[i] = (int *) calloc (nAtoms, sizeof (int)); }
 
 	#pragma omp parallel for
-	for (int i = 0; i < totalTimesteps; ++i)
+	for (int i = 0; i < ceil ((float)totalTimesteps / (float)INVERSE_TIMESTEP_LIMIT); ++i)
 	{
 		currentProgress++;
 		if ((currentProgress%100) == 0)
 		{
-			fprintf(stdout, "Calculating displacement square: %.2f%% complete...           \r", ((float)currentProgress * (float)100 / (float)totalTimesteps), currentProgress);
+			fprintf(stdout, "Calculating displacement square: %.2f%% complete...           \r", ((float)currentProgress * (float)INVERSE_TIMESTEP_LIMIT * (float)100 / (float)totalTimesteps), currentProgress);
 			fflush (stdout);
 		}
 
@@ -145,14 +150,15 @@ float **computeDisplacementSquare (float **displacementSquare, TRAJ_DATA **atoms
 
 int main(int argc, char const *argv[])
 {
-	if (argc != 2)
+	if (argc != 4)
 	{
-		printf("Incorrect args passed. The program requires (only) input dump file as argv[1].\n");
+		printf("Incorrect args passed. The program requires input dump file as argv[1], dt as argv[2], and output frequency as argv[3].\n");
 		exit (1);
 	}
 
-	FILE *inputDumpFile;
+	FILE *inputDumpFile, *outputMSDFile;
 	inputDumpFile = fopen (argv[1], "r");
+	outputMSDFile = fopen (OUTPUTFILENAME, "w");
 
 	char lineContent[2000];
 
@@ -172,7 +178,7 @@ int main(int argc, char const *argv[])
 
 	for (int i = 0; i < totalTimesteps; ++i)
 	{
-		for (int j = 0; j < 92; ++j)
+		for (int j = 0; j < NPOLYMERBEADS; ++j)
 		{
 			meanSquareDisplacementPolymer[i] += displacementSquare[i][j];
 		}
@@ -182,7 +188,7 @@ int main(int argc, char const *argv[])
 
 	for (int i = 0; i < totalTimesteps; ++i)
 	{
-		for (int j = 93; j < 147; ++j)
+		for (int j = 93; j < NCOUNTERIONS; ++j)
 		{
 			meanSquareDisplacementCounterions[i] += displacementSquare[i][j];
 		}
@@ -190,11 +196,12 @@ int main(int argc, char const *argv[])
 		meanSquareDisplacementCounterions[i] /= 55;
 	}
 
-	for (int i = 0; i < totalTimesteps; ++i)
+	for (int i = 0; i < ceil ((float)totalTimesteps / (float)INVERSE_TIMESTEP_LIMIT); ++i)
 	{
-		printf("%d %f %f\n", i + 1, meanSquareDisplacementPolymer[i], meanSquareDisplacementCounterions[i]);
+		fprintf(outputMSDFile, "%f %f %f\n", (i + 1) * atof (argv[2]) * atof (argv[3]), meanSquareDisplacementPolymer[i], meanSquareDisplacementCounterions[i]);
 	}
 
 	fclose (inputDumpFile);
+	fclose (outputMSDFile);
 	return 0;
 }

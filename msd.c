@@ -233,7 +233,7 @@ void printMSD (float *meanSquareDisplacement_avg, int nTimeframes, const char *i
 	free (outputFilename);
 }
 
-float *computeMeanSquareDisplacement2 (float *meanSquareDisplacement2, ATOM_COORDS *allAtomicCoordinates, int nAtoms, int nTimeframes)
+/*float *computeMeanSquareDisplacement2 (float *meanSquareDisplacement2, ATOM_COORDS *allAtomicCoordinates, int nAtoms, int nTimeframes)
 {
 	float scalarDistance;
 	ATOM_COORDS *distance;
@@ -257,7 +257,7 @@ float *computeMeanSquareDisplacement2 (float *meanSquareDisplacement2, ATOM_COOR
 
 	return meanSquareDisplacement2;
 }
-
+*/
 int main(int argc, char const *argv[])
 {
 	if (argc == 1) {
@@ -298,7 +298,7 @@ int main(int argc, char const *argv[])
 
 	meanSquareDisplacement = computeMeanSquareDisplacement (meanSquareDisplacement, chainCOMs, nTimeframes, nChains);
 
-	meanSquareDisplacement2 = computeMeanSquareDisplacement2 (meanSquareDisplacement2, allAtomicCoordinates, nAtoms, nTimeframes);
+	/*meanSquareDisplacement2 = computeMeanSquareDisplacement2 (meanSquareDisplacement2, allAtomicCoordinates, nAtoms, nTimeframes);*/
 
 	float *meanSquareDisplacement_avg;
 	meanSquareDisplacement_avg = (float *) malloc (nTimeframes * sizeof (float));
